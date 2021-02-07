@@ -1,0 +1,143 @@
+pragma solidity ^0.6.0;
+
+//Creating a smart contract for Smart Container violations
+
+contract SmartContainer {
+    
+    //Participating Actors with Ethereum Addresses
+    address public container;
+    address public manufacturer;
+    mapping(address => bool) distributor; // only authorized distributors are allowed
+    mapping(address => bool) vaccination_center; // only authorized vaccination centers are allowed
+    string public container_content; 
+    enum containerStatus {NotReady, ReadyforDelivery, StartDelivery, onTrack, EndDelivery, ContainerReceived, Violated}
+    containerStatus public state;
+    uint startTime;
+    enum violationType { None, Temp, Open, Light, Route}
+    violationType public violation;
+    int temperature; // temperature tracking
+    int open;
+    int track; // 1 if on track, 0 if not 
+    int light;
+    
+    
+    
+//Tracking Events
+event ContainerOwnership (address previousowner, address newowner); // Manufacturer announces container is created
+event ContainerReadyForDelivery (address manufacturer); //Manufacturer announces container is ready for delivery 
+event DeliveryStart (address distributor); //Distributor announces that start of the delivery process
+event DeliveryEnd(address distributor); // Distributor announces the end of the delivery 
+event ContainerReceiption(address vaccination_center); //Vaccination center announces the receiption of the container 
+
+//Violations Events
+event TemperatureViolation(string message, bool t, int v); 
+event ContainerOpening(string message, bool o, int v);
+event OffTrack(string message, bool r, int v);
+event LightViolation (string message, bool l, int v);
+
+
+//Defining Modifiers 
+
+modifier onlyManufacturer() {
+    require(manufacturer == msg.sender, "The sender is not eligible to run this function");
+    _;
+}
+
+modifier onlyDistributor () {
+    require(distributor[msg.sender], "The sender is not eligible to run this function");
+    _;
+}
+
+modifier onlyVaccinationCenter() {
+    require(vaccination_center[msg.sender], "The sender is not eligible to run this function");
+    _;
+}
+
+modifier onlyContainer() {
+    require(container == msg.sender, "The sender is not eligible to run this function");
+    _;
+}
+
+//Creating the contract constructor
+
+constructor () public {
+    manufacturer = msg.sender;
+    startTime = block.timestamp;
+    container_content = "This container contains X amount of Pfizer-BioNTech Vaccine doses.";
+    state = containerStatus.NotReady;
+    emit ContainerOwnership(address(0), manufacturer);
+    
+}
+
+// View Container manufacturer
+    function containerManufacturer() public view returns (address _currentOwner){
+        return manufacturer;
+    }
+
+//Authorization Functions
+
+     function distributorAddress (address user) public onlyManufacturer { //manufacturer adds only authorized distributors
+        distributor[user]=true;
+    } 
+    
+     function vaccinationcenterAddrress (address user) public onlyManufacturer { //manufacturer adds only authorized vaccination centers
+        vaccination_center[user]=true;
+    }
+    
+    
+    //Smart Container Tracking
+
+    function CreateContainer() public onlyManufacturer{
+        require(state == containerStatus.NotReady);
+        state = containerStatus.ReadyforDelivery;
+        emit ContainerReadyForDelivery(msg.sender);
+    
+    }
+    
+    function startDelivery() public onlyDistributor{
+        require(state == containerStatus.ReadyforDelivery);
+        state == containerStatus.onTrack;
+        emit DeliveryStart(msg.sender);
+    }
+    
+    function EndDelivery() public onlyDistributor{
+        require(state == containerStatus.onTrack);
+        state == containerStatus.EndDelivery;
+        emit DeliveryEnd(msg.sender);
+        
+    }
+    
+    function ReceiveContainer() public onlyVaccinationCenter{
+        require(state == containerStatus.EndDelivery);
+        state == containerStatus.ContainerReceived;
+        emit ContainerReceiption(msg.sender);
+    }
+    
+    
+    //Violations Monitoring 
+    
+    function violationOccurance(string memory message, violationType v, int value) public onlyContainer{
+        require(state == containerStatus.ReadyforDelivery); // Monitoring starts when the container is ready for delivery
+        violation = v;
+        state = containerStatus.Violated;
+        if(violation == violationType.Temp){
+            temperature = value; 
+            emit TemperatureViolation(message, true, temperature);
+        }
+        else if (violation == violationType.Open){
+            open = value; //either 1 or 0
+            emit ContainerOpening (message, true, open);
+        }
+        else if (violation == violationType.Route){
+            track = value;
+            emit OffTrack(message, true, track);
+        }
+        else if (violation == violationType.Light){
+            light = value;
+            emit LightViolation(message, true, light);
+        }
+    }
+    
+
+
+}
