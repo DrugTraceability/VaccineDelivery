@@ -27,7 +27,7 @@ event ContainerOwnership (address previousowner, address newowner); // Manufactu
 event ContainerReadyForDelivery (address manufacturer); //Manufacturer announces container is ready for delivery 
 event DeliveryStart (address distributor); //Distributor announces that start of the delivery process
 event DeliveryEnd(address distributor); // Distributor announces the end of the delivery 
-event ContainerReceiption(address vaccination_center); //Vaccination center announces the receiption of the container 
+event ContainerReception(address vaccination_center); //Vaccination center announces the receiption of the container 
 
 //Violations Events
 event TemperatureViolation(string message, bool t, int v); 
@@ -60,9 +60,10 @@ modifier onlyContainer() {
 
 //Creating the contract constructor
 
-constructor () public {
+constructor () public payable{
     manufacturer = msg.sender;
     startTime = block.timestamp;
+    container = 0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db;
     container_content = "This container contains X amount of Pfizer-BioNTech Vaccine doses.";
     state = containerStatus.NotReady;
     emit ContainerOwnership(address(0), manufacturer);
@@ -73,6 +74,7 @@ constructor () public {
     function containerManufacturer() public view returns (address _currentOwner){
         return manufacturer;
     }
+    
 
 //Authorization Functions
 
@@ -95,29 +97,29 @@ constructor () public {
     }
     
     function startDelivery() public onlyDistributor{
-        require(state == containerStatus.ReadyforDelivery);
-        state == containerStatus.onTrack;
+        require(state == containerStatus.ReadyforDelivery, "Can't start delivery before creating the container");
+        state = containerStatus.onTrack;
         emit DeliveryStart(msg.sender);
     }
     
     function EndDelivery() public onlyDistributor{
-        require(state == containerStatus.onTrack);
-        state == containerStatus.EndDelivery;
+        require(state == containerStatus.onTrack, "Can't end delivery before announcing the start of it");
+        state = containerStatus.EndDelivery;
         emit DeliveryEnd(msg.sender);
         
     }
     
     function ReceiveContainer() public onlyVaccinationCenter{
-        require(state == containerStatus.EndDelivery);
-        state == containerStatus.ContainerReceived;
-        emit ContainerReceiption(msg.sender);
+        require(state == containerStatus.EndDelivery, "Can't receive the container before announcing the end of the");
+        state = containerStatus.ContainerReceived;
+        emit ContainerReception(msg.sender);
     }
     
     
     //Violations Monitoring 
     
     function violationOccurance(string memory message, violationType v, int value) public onlyContainer{
-        require(state == containerStatus.ReadyforDelivery); // Monitoring starts when the container is ready for delivery
+        require(state == containerStatus.onTrack, "The container is not being delivered"); // Monitoring starts when the container is on track
         violation = v;
         state = containerStatus.Violated;
         if(violation == violationType.Temp){
@@ -141,3 +143,4 @@ constructor () public {
 
 
 }
+
