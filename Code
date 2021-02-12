@@ -7,8 +7,8 @@ contract SmartContainer {
     //Participating Actors with Ethereum Addresses
     address public container;
     address public manufacturer;
+    address vaccination_center; // only authorized vaccination center is allowed
     mapping(address => bool) distributor; // only authorized distributors are allowed
-    mapping(address => bool) vaccination_center; // only authorized vaccination centers are allowed
     string public container_content; 
     enum containerStatus {NotReady, ReadyforDelivery, StartDelivery, onTrack, EndDelivery, ContainerReceived, Violated}
     containerStatus public state;
@@ -49,7 +49,7 @@ modifier onlyDistributor () {
 }
 
 modifier onlyVaccinationCenter() {
-    require(vaccination_center[msg.sender], "The sender is not eligible to run this function");
+    require(vaccination_center == msg.sender, "The sender is not eligible to run this function");
     _;
 }
 
@@ -64,6 +64,7 @@ constructor () public payable{
     manufacturer = msg.sender;
     startTime = block.timestamp;
     container = 0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db;
+    vaccination_center = 0x78731D3Ca6b7E34aC0F824c42a7cC18A495cabaB;
     container_content = "This container contains X amount of Pfizer-BioNTech Vaccine doses.";
     state = containerStatus.NotReady;
     emit ContainerOwnership(address(0), manufacturer);
@@ -76,15 +77,15 @@ constructor () public payable{
     }
     
 
-//Authorization Functions
+//Authorization Function
 
      function distributorAddress (address user) public onlyManufacturer { //manufacturer adds only authorized distributors
         distributor[user]=true;
     } 
     
-     function vaccinationcenterAddrress (address user) public onlyManufacturer { //manufacturer adds only authorized vaccination centers
-        vaccination_center[user]=true;
-    }
+//     function vaccinationcenterAddrress (address user) public onlyManufacturer { //manufacturer adds only authorized vaccination centers
+//        vaccination_center[user]=true;
+//    }
     
     
     //Smart Container Tracking
@@ -118,7 +119,7 @@ constructor () public payable{
     
     //Violations Monitoring 
     
-    function violationOccurance(string memory message, violationType v, int value) public onlyContainer{
+    function violationOccurrence(string memory message, violationType v, int value) public onlyContainer{
         require(state == containerStatus.onTrack, "The container is not being delivered"); // Monitoring starts when the container is on track
         violation = v;
         state = containerStatus.Violated;
