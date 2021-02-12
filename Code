@@ -79,7 +79,7 @@ constructor () public payable{
 
 //Authorization Function
 
-     function distributorAddress (address user) public onlyManufacturer { //manufacturer adds only authorized distributors
+     function distributorRegistration (address user) public onlyManufacturer { //manufacturer adds only authorized distributors
         distributor[user]=true;
     } 
     
