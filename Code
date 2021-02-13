@@ -1,5 +1,4 @@
-pragma solidity ^0.6.0;
-pragma experimental ABIEncoderV2;
+pragma solidity ^0.4.0;
 
 //Creating a smart contract for Smart Container violations
 
@@ -10,7 +9,7 @@ contract SmartContainer {
     address public manufacturer;
     address vaccination_center; // only authorized vaccination center is allowed
     mapping(address => bool) distributor; // only authorized distributors are allowed
-    string public container_content; 
+    string container_content; 
     enum containerStatus {NotReady, ReadyforDelivery, StartDelivery, onTrack, EndDelivery, ContainerReceived, Violated}
     containerStatus public state;
     uint startTime;
@@ -66,7 +65,7 @@ constructor() public payable{
     startTime = block.timestamp;
     container = 0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db;
     vaccination_center = 0x78731D3Ca6b7E34aC0F824c42a7cC18A495cabaB;
-    container_content = "This container contains X amount of Pfizer-BioNTech Vaccine doses.";
+    container_content = "This container contains X amount of Vaccine doses.";
     state = containerStatus.NotReady;
     emit ContainerOwnership(address(0), manufacturer);
     
@@ -120,7 +119,7 @@ constructor() public payable{
     
     //Violations Monitoring 
     
-    function violationOccurrence(string memory message, violationType v, int value) public onlyContainer{
+    function violationOccurrence(string memory message, violationType v, int value) private onlyContainer{
         require(state == containerStatus.onTrack, "The container is not being delivered"); // Monitoring starts when the container is on track
         violation = v;
         state = containerStatus.Violated;
@@ -145,4 +144,3 @@ constructor() public payable{
 
 
 }
-
