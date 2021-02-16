@@ -84,18 +84,13 @@ constructor() public payable{
         distributor[user]=true;
     } 
     
-//     function vaccinationcenterAddrress (address user) public onlyManufacturer { //manufacturer adds only authorized vaccination centers
-//        vaccination_center[user]=true;
-//    }
-    
     
     //Smart Container Tracking
 
     function CreateContainer() public onlyManufacturer{
-        require(state == containerStatus.NotReady);
+        require(state == containerStatus.NotReady, "The smart container has already been created");
         state = containerStatus.ReadyforDelivery;
         emit ContainerReadyForDelivery(msg.sender);
-    
     }
     
     function StartDelivery() public onlyDistributor{
